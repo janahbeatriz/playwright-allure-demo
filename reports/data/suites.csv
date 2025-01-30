@@ -1,7 +1,0 @@
-"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-"","3882","Successful login with valid credentials @smoke","chrome","Thu Jan 30 18:50:07 PST 2025","passed","Thu Jan 30 18:50:11 PST 2025","Login Functionality","login\login.spec.js","",""
-"","2213","Login page UI validation @ui","firefox","Thu Jan 30 18:50:17 PST 2025","passed","Thu Jan 30 18:50:20 PST 2025","Login Functionality","login\login.spec.js","",""
-"","2296","Login page UI validation @ui","chrome","Thu Jan 30 18:50:14 PST 2025","passed","Thu Jan 30 18:50:16 PST 2025","Login Functionality","login\login.spec.js","",""
-"","2607","Locked user login validation @security","firefox","Thu Jan 30 18:50:15 PST 2025","passed","Thu Jan 30 18:50:17 PST 2025","Login Functionality","login\login.spec.js","",""
-"","5362","Successful login with valid credentials @smoke","firefox","Thu Jan 30 18:50:07 PST 2025","passed","Thu Jan 30 18:50:13 PST 2025","Login Functionality","login\login.spec.js","",""
-"","2487","Locked user login validation @security","chrome","Thu Jan 30 18:50:11 PST 2025","passed","Thu Jan 30 18:50:14 PST 2025","Login Functionality","login\login.spec.js","",""
