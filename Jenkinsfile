@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODE_HOME = tool name: 'NodeJS', type: 'NodeJS'
+        NODE_HOME = tool name: 'node-18', type: 'NodeJS'
         REPORT_DIR = "${WORKSPACE}/allure-reports"
     }
 
