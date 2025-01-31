@@ -1,9 +1,9 @@
 pipeline {
     agent any
-
+    
     tools { 
         nodejs "node-18"
-        allure 'ALLURE_HOME' // Use globally configured Allure Commandline
+        allure 'ALLURE_HOME'  // This should be correctly configured in Jenkins
     }
 
     environment {
@@ -31,11 +31,16 @@ pipeline {
             }
         }
 
-        stage('Check Allure Results') {
+        stage('Ensure Allure is Installed') {
             steps {
                 script {
-                    echo "Checking if allure-results directory exists before merging"
-                    bat 'if exist allure-results (dir allure-results) else (echo No allure-results found)'
+                    echo "Checking if Allure is installed..."
+                    try {
+                        bat 'allure --version'
+                    } catch (Exception e) {
+                        echo "Allure is not installed globally, installing it now..."
+                        bat 'npm install allure-commandline -g'
+                    }
                 }
             }
         }
@@ -43,7 +48,7 @@ pipeline {
         stage('Generate Allure Report') {
             steps {
                 bat '''
-                %ALLURE_HOME%\\bin\\allure generate allure-results --clean -o %REPORT_DIR%
+                allure generate allure-results --clean -o %REPORT_DIR%
                 '''
             }
         }
@@ -68,7 +73,7 @@ pipeline {
 
     post {
         always {
-            cleanWs() // Universal workspace cleanup
+            cleanWs() // Workspace cleanup
         }
     }
 }
