@@ -93,7 +93,9 @@ pipeline {
 
     post {
         always {
-            deleteDir() // Safe workspace cleanup
+            script{
+                deleteDir() // Safe workspace cleanup   
+            }
         }
     }
 }
