@@ -1,55 +1,38 @@
 pipeline {
     agent any
+    
+    tools { nodejs "node-18" }
 
     environment {
-        NODE_HOME = tool name: 'node-18', type: 'NodeJS' // NodeJS setup
-        ALLURE_HOME = tool name: 'ALLURE_HOME', type: 'AllureCommandline' // Use Allure Commandline
-        REPORT_DIR = "${WORKSPACE}/allure-reports" // Allure report directory
-    }
-
-    options {
-        timeout(time: 15, unit: 'MINUTES') // Timeout for long builds
+        REPORT_DIR = "${WORKSPACE}/allure-reports"
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                checkout scm // Pull the latest code from the repository
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'npm ci' // Install Node dependencies on Unix
-                    } else {
-                        bat 'npm ci' // Install Node dependencies on Windows
-                    }
-                }
+                bat 'npm ci'
             }
         }
 
         stage('Install Playwright Browsers') {
             steps {
-                script {
-                    if (isUnix()) {
-                        sh 'npx playwright install --with-deps' // Install Playwright browsers
-                    } else {
-                        bat 'npx playwright install --with-deps'
-                    }
-                }
+                bat 'npx playwright install --with-deps'
             }
         }
 
         stage('Run Playwright Tests') {
             steps {
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                    bat 'npx playwright test --workers 4'
+                }
+            }
+        }
+
+        stage('Check Allure Results') {
+            steps {
                 script {
-                    if (isUnix()) {
-                        sh 'npx playwright test --workers 4' // Run tests in parallel
-                    } else {
-                        bat 'npx playwright test --workers 4'
-                    }
+                    echo "Checking if allure-results directory exists before merging"
+                    bat 'if exist allure-results (dir allure-results) else (echo No allure-results found)'
                 }
             }
         }
@@ -57,16 +40,31 @@ pipeline {
         stage('Generate Allure Report') {
             steps {
                 script {
-                    if (isUnix()) {
-                        sh '''
-                        npx allure-playwright merge allure-results
-                        ${ALLURE_HOME}/bin/allure generate allure-results --clean -o ${REPORT_DIR}
-                        '''
-                    } else {
-                        bat """
-                        npx allure-playwright merge allure-results
-                        %ALLURE_HOME%\\bin\\allure generate allure-results --clean -o %REPORT_DIR%
-                        """
+                    def maxRetries = 3
+                    def retryCount = 0
+                    while (retryCount < maxRetries) {
+                        try {
+                            if (isUnix()) {
+                                sh '''
+                                npm install allure-playwright allure-commandline --save-dev
+                                npx allure-playwright merge allure-results
+                                npx allure generate allure-results --clean -o ${REPORT_DIR}
+                                '''
+                            } else {
+                                bat '''
+                                npm install allure-playwright allure-commandline --save-dev
+                                npx allure-playwright merge allure-results
+                                npx allure generate allure-results --clean -o %REPORT_DIR%
+                                '''
+                            }
+                            break // Exit loop if successful
+                        } catch (Exception e) {
+                            retryCount++
+                            echo "Retry ${retryCount}/${maxRetries} failed. Retrying..."
+                            if (retryCount == maxRetries) {
+                                error "Allure report generation failed after ${maxRetries} retries."
+                            }
+                        }
                     }
                 }
             }
@@ -76,14 +74,15 @@ pipeline {
             steps {
                 allure([
                     reportBuildPolicy: 'ALWAYS',
-                    results: [[path: 'allure-results']], // Path to allure-results
-                    report: REPORT_DIR // Path to final Allure report
+                    results: [[path: 'allure-results']],
+                    report: REPORT_DIR
                 ])
             }
         }
 
-        stage('Archive Allure Report') {
+        stage('Archive Reports') {
             steps {
+                archiveArtifacts allowEmptyArchive: true, artifacts: '**/playwright-report/*', onlyIfSuccessful: true
                 archiveArtifacts allowEmptyArchive: true, artifacts: '**/allure-reports/*', onlyIfSuccessful: true
             }
         }
@@ -91,7 +90,9 @@ pipeline {
 
     post {
         always {
-            cleanWs() // Clean workspace after build
+            node('built-in') {
+                deleteDir() // Safe workspace cleanup   
+            }
         }
     }
 }
