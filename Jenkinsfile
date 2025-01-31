@@ -6,6 +6,10 @@ pipeline {
         REPORT_DIR = "${WORKSPACE}/allure-reports"
     }
 
+    options {
+        timeout(time: 15, unit: 'MINUTES') // Prevent hung builds
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -41,21 +45,9 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'npx playwright test'
+                        sh 'npx playwright test --workers 4' // Parallel execution
                     } else {
-                        bat 'npx playwright test'
-                    }
-                }
-            }
-        }
-
-        stage('Create Report Folder') {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh "mkdir -p ${REPORT_DIR}"
-                    } else {
-                        bat "mkdir ${REPORT_DIR}"
+                        bat 'npx playwright test --workers 4'
                     }
                 }
             }
@@ -65,11 +57,17 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'npm install allure-commandline'
-                        sh "npx allure generate allure-results --clean -o ${REPORT_DIR}"
+                        sh '''
+                        npx allure-playwright merge
+                        npm install allure-commandline
+                        npx allure generate allure-results --clean -o ${REPORT_DIR}
+                        '''
                     } else {
-                        bat 'npm install allure-commandline'
-                        bat "npx allure generate allure-results --clean -o ${REPORT_DIR}"
+                        bat '''
+                        npx allure-playwright merge
+                        npm install allure-commandline
+                        npx allure generate allure-results --clean -o %REPORT_DIR%
+                        '''
                     }
                 }
             }
@@ -95,7 +93,7 @@ pipeline {
 
     post {
         always {
-            cleanWs() // 
+            deleteDir() // Safe workspace cleanup
         }
     }
 }
