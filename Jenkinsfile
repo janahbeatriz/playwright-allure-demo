@@ -95,9 +95,7 @@ pipeline {
 
     post {
         always {
-            node { // FIX: Ensure cleanWs() runs inside a node block to avoid errors
-                cleanWs()
-            }
+            cleanWs() // 
         }
     }
 }
