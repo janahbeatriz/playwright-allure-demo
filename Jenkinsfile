@@ -87,6 +87,7 @@ pipeline {
 
         stage('Archive Reports') {
             steps {
+                archiveArtifacts allowEmptyArchive: true, artifacts: '**/playwright-report/*', onlyIfSuccessful: true
                 archiveArtifacts allowEmptyArchive: true, artifacts: '**/allure-reports/*', onlyIfSuccessful: true
             }
         }
@@ -94,7 +95,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node { // FIX: Ensure cleanWs() runs inside a node block to avoid errors
+                cleanWs()
+            }
         }
     }
 }
