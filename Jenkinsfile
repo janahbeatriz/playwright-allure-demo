@@ -93,7 +93,7 @@ pipeline {
 
     post {
         always {
-            node{
+            node('built-in') {
                 deleteDir() // Safe workspace cleanup   
             }
         }
